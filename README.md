@@ -1,3 +1,5 @@
+# NIE JESTEM KTO ZROBIL GRE; I NIE MOGE DAC CZEGOS INSTALUJ CO CHESZ ALE TO JEST ARCHIVE Z GRY KTORA TAM JEST
+ok? wtedy czytaj original readme.md (rest of the things are unchanged)
 # source code mojej gry
 ## przed wykorzystaniem tego zapoznaj się z regulaminem:
 1. Nie rozprzestrzeniaj
