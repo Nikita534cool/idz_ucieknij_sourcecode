@@ -2,81 +2,64 @@ using UnityEngine;
 
 public class PlayerJump : MonoBehaviour
 {
-    public float jumpForce = 5f; // Si³a skoku
+    public float jumpForce = 5f; // Siï¿½a skoku
     public LayerMask groundLayer; // Warstwa "ziemi" (platform)
 
     private Rigidbody2D rb;
-    private bool isGrounded; // Flaga wskazuj¹ca, czy gracz jest na ziemi
+    private int groundContactCount; // Liczba kolizji z ziemiï¿½ (zamiast pojedynczej flagi)
+    private bool isGrounded => groundContactCount > 0; // Gracz jest na ziemi, jeï¿½li ma co najmniej jeden kontakt
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         if (rb == null)
         {
-            Debug.LogError("Brak komponentu Rigidbody2D na tym obiekcie! Dodaj Rigidbody2D, aby skrypt dzia³a³ poprawnie.");
+            Debug.LogError("Brak komponentu Rigidbody2D na tym obiekcie! Dodaj Rigidbody2D, aby skrypt dziaï¿½aï¿½ poprawnie.");
         }
     }
 
     void Update()
     {
-        // Jeœli lewy przycisk myszy zosta³ klikniêty i gracz jest na ziemi, wykonaj skok
-        if (Input.GetMouseButtonDown(0) && isGrounded)
+        // Jeï¿½li lewy przycisk myszy zostaï¿½ klikniï¿½ty i gracz jest na ziemi, wykonaj skok
+        if (rb != null && Input.GetMouseButtonDown(0) && isGrounded)
         {
+            rb.velocity = new Vector2(rb.velocity.x, 0f); // Resetuj pionowï¿½ prï¿½dkoï¿½ï¿½, aby skok byï¿½ spï¿½jny
             rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
-            isGrounded = false; // Po skoku ustawiamy na false, ¿eby nie skakaæ w powietrzu
         }
     }
 
-    // Metoda wywo³ywana, gdy ten kolider wejdzie w kolizjê z innym koliderem
+    // Sprawdza, czy dowolny punkt kontaktu kolizji wskazuje, ï¿½e gracz stoi na obiekcie od gï¿½ry
+    private bool HasGroundContactFromBelow(Collision2D collision)
+    {
+        foreach (ContactPoint2D contact in collision.contacts)
+        {
+            if (Vector2.Dot(contact.normal, Vector2.up) > 0.5f) // Uï¿½yj wartoï¿½ci np. 0.5f jako prï¿½g
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Metoda wywoï¿½ywana, gdy ten kolider wejdzie w kolizjï¿½ z innym koliderem
     void OnCollisionEnter2D(Collision2D collision)
     {
-        // SprawdŸ, czy obiekt, z którym nast¹pi³a kolizja, jest na warstwie "ziemi"
-        if (((1 << collision.gameObject.layer) & groundLayer) != 0)
+        // Sprawdï¿½, czy obiekt, z ktï¿½rym nastï¿½piï¿½a kolizja, jest na warstwie "ziemi"
+        if (((1 << collision.gameObject.layer) & groundLayer) != 0 && HasGroundContactFromBelow(collision))
         {
-            // Opcjonalnie: Upewnij siê, ¿e kolizja nastêpuje od do³u (aby gracz nie skaka³ po zderzeniu z bokiem platformy)
-            // Mo¿esz to sprawdziæ, analizuj¹c normaln¹ wektora kolizji
-            foreach (ContactPoint2D contact in collision.contacts)
-            {
-                // Jeœli normalna wektora kolizji wskazuje w górê (czyli kolizja nast¹pi³a od do³u),
-                // oznacza to, ¿e gracz stoi na platformie.
-                if (Vector2.Dot(contact.normal, Vector2.up) > 0.5f) // U¿yj wartoœci np. 0.5f jako próg
-                {
-                    isGrounded = true;
-                    return; // Wystarczy jeden punkt styku od do³u, ¿eby uznaæ gracza za uziemionego
-                }
-            }
+            groundContactCount++;
         }
     }
 
-    // Metoda wywo³ywana, gdy ten kolider przestanie kolidowaæ z innym koliderem
+    // Metoda wywoï¿½ywana, gdy ten kolider przestanie kolidowaï¿½ z innym koliderem
     void OnCollisionExit2D(Collision2D collision)
     {
-        // SprawdŸ, czy obiekt, z którym przestaliœmy kolidowaæ, by³ na warstwie "ziemi"
-        if (((1 << collision.gameObject.layer) & groundLayer) != 0)
+        // Sprawdï¿½, czy obiekt, z ktï¿½rym przestaliï¿½my kolidowaï¿½, byï¿½ na warstwie "ziemi".
+        // Uï¿½ywamy licznika kontaktï¿½w zamiast pojedynczej flagi, aby gracz pozostaï¿½ "uziemiony",
+        // jeï¿½li nadal dotyka innej platformy (np. stojï¿½c na granicy dwï¿½ch koliderï¿½w).
+        if (((1 << collision.gameObject.layer) & groundLayer) != 0 && groundContactCount > 0)
         {
-            // Mo¿liwe, ¿e gracz zszed³ z platformy lub z niej zeskoczy³
-            // Jeœli nie kolidujemy ju¿ z ¿adnym obiektem na warstwie groundLayer, ustawiamy isGrounded na false.
-            // Wa¿ne: to uproszczenie. W bardziej z³o¿onych scenariuszach (np. ruchome platformy, wiele kontaktów)
-            // lepszym rozwi¹zaniem jest sprawdzanie w OnCollisionStay2D lub OverlapCircle.
-            // Dla prostego skakania ten scenariusz jest wystarczaj¹cy.
-            isGrounded = false;
-        }
-    }
-
-    // Dodatkowo, aby upewniæ siê, ¿e isGrounded jest zawsze poprawne, nawet gdy gracz jest "stabilny" na platformie,
-    // mo¿esz u¿yæ OnCollisionStay2D.
-    void OnCollisionStay2D(Collision2D collision)
-    {
-        if (((1 << collision.gameObject.layer) & groundLayer) != 0)
-        {
-            foreach (ContactPoint2D contact in collision.contacts)
-            {
-                if (Vector2.Dot(contact.normal, Vector2.up) > 0.5f)
-                {
-                    isGrounded = true;
-                    return;
-                }
-            }
+            groundContactCount--;
         }
     }
 }
