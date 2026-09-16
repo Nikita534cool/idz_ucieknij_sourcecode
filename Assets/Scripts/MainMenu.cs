@@ -16,6 +16,14 @@ public class MainMenu : MonoBehaviour
     public string betaVerNum = "v1.3.0 Beta";
     public string betaVerExpleString = "v<color=red>1<color=white>.<color=green>3<color=white>.<color=yellow>0";
 
+    void Awake()
+    {
+        // Wy��cz VSync i limit klatek na sekund�, aby gra dzia�a�a z pe�n� pr�dko�ci�
+        // od�wie�ania obs�ugiwan� przez sprz�t, zamiast by� ograniczona do 60 FPS.
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = -1;
+    }
+
     void Start()
     {
         if (betaVer)
